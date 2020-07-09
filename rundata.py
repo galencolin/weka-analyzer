@@ -1,3 +1,6 @@
+# python-weka-wrapper3
+# matplotlib
+
 import sys
 import os
 import datetime
@@ -42,17 +45,13 @@ save = True
 if ('save' in args):
 	save = (args['save'].lower() != 'false')
 	
-sortby = None
+sortby = 'FirstSeenDate'
 if ('sortby' in args):
 	sortby = args['sortby']
 	
 balance = True
 if ('balance' in args):
 	balance = (args['balance'].lower() != 'false')
-	
-train_mode = 'start'
-if ('train_mode' in args):
-	train_mode = args['train_mode']
 
 # Load the data file
 print("Loading file", filename + '...')
@@ -103,7 +102,8 @@ classifier_list = [
 "weka.classifiers.trees.RandomTree",
 "weka.classifiers.trees.RandomForest",
 "weka.classifiers.rules.JRip",
-"weka.classifiers.rules.PART"
+"weka.classifiers.rules.PART",
+"weka.classifiers.lazy.IBk"
 ]
 
 # Builds a list of classifiers without evaluating them
@@ -166,48 +166,25 @@ for i in range(len(splitted)):
 	splitted[i].delete_attribute(splitted[i].attribute_by_name('TimeDateStamp').index)
 	splitted[i].class_is_last()
 
-if (train_mode == 'start'):
-	train_data = splitted[0]
-	for next in range(1, train_split):
-		train_data = train_data.append_instances(train_data, splitted[next])
-	train_data = apply_balance(train_data)
-	train_label = "1-" + str(train_split * group_size)
+train_data = splitted[0]
+for next in range(1, train_split):
+	train_data = train_data.append_instances(train_data, splitted[next])
+train_data = apply_balance(train_data)
+train_label = "1-" + str(train_split * group_size)
 
-	for i in range(len(splitted)):
-		splitted[i] = apply_balance(splitted[i])
+for i in range(len(splitted)):
+	splitted[i] = apply_balance(splitted[i])
 
-	# Train the models
-	label_list = [train_label]
-	classifiers, train_results = train_classifiers(classifier_list, train_data)
-	result_list = [train_results]
+# Train the models
+label_list = [train_label]
+classifiers, train_results = train_classifiers(classifier_list, train_data)
+result_list = [train_results]
 
-	# Test the models
-	for i in range(train_split, len(splitted)):
-		result = test_classifiers(classifiers, classifier_list, splitted[i], labels[i])
-		label_list.append(labels[i])
-		result_list.append(result)
-else:
-	label_list = []
-	result_list = []
-	
-	start_pos = 1
-	if (train_mode == 'relative_strict'):
-		start_pos = train_split
-	
-	for i in range(start_pos, len(splitted)):
-		print("Evaluating group", labels[i])
-		
-		train_data = splitted[i - 1]
-		for next in range(1, train_split):
-			pos = i - 1 - next
-			if (pos < 0):
-				break
-			train_data = train_data.append_instances(train_data, splitted[pos])
-		
-		classifiers = build_classifiers(classifier_list, train_data)
-		result = test_classifiers(classifiers, classifier_list, splitted[i], labels[i])
-		label_list.append(labels[i])
-		result_list.append(result)
+# Test the models
+for i in range(train_split, len(splitted)):
+	result = test_classifiers(classifiers, classifier_list, splitted[i], labels[i])
+	label_list.append(labels[i])
+	result_list.append(result)
 
 # Gather the data into a plot-friendly format (dimensions: model, result, type (accuracy or recall))
 model_accuracy = []
@@ -266,8 +243,7 @@ if (save):
 	plt.savefig(RUN_ID + "/" + "Results" + " (" + RUN_ID + ")" + ".png", bbox_inches='tight')
 	
 	saver = Saver(classname = "weka.core.converters.ArffSaver")
-	if (train_mode == 'start'):
-		saver.save_file(train_data, RUN_ID + "/" + "train_" + train_label + ".arff")
+	saver.save_file(train_data, RUN_ID + "/" + "train_" + train_label + ".arff")
 	for i in range(len(splitted)):
 		saver.save_file(splitted[i], RUN_ID + "/" + "test_" + labels[i] + ".arff")
 
