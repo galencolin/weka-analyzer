@@ -1,4 +1,4 @@
-# Some information about the command-line arguments
+# Some information about the command-line arguments (for rundata.py)
 
 **balance**
 

@@ -4,6 +4,7 @@
 import sys
 import os
 import datetime
+import math
 
 import weka.core.jvm as jvm
 from weka.core.converters import Loader, Saver
@@ -14,13 +15,8 @@ from weka.core.classes import Random
 import matplotlib.pyplot as plt
 import matplotlib
 
-# do stuff per model
-# show sliding window vs. full past
-# multiple sliding windows
-# also run with size=2000?
-# if one thing is nan, make them all nan - consistency
-# save values (like a csv)
-# first 10000 - all goodware
+# also rundata with size=2000?
+# note: first 10000 - all goodware
 
 # Start the JVM for Weka
 jvm.start()
@@ -64,6 +60,9 @@ if ('balance' in args):
 train_mode = 'start'
 if ('train_mode' in args):
 	train_mode = args['train_mode']
+	
+window_sizes = [5, 10, 100]
+# window_sizes = [1] # just for debugging
 
 # Load the data file
 print("Loading file", filename + '...')
@@ -110,8 +109,8 @@ def apply_balance(data):
 
 # A list of classifiers
 classifier_list = [
-"weka.classifiers.trees.J48",
 "weka.classifiers.trees.RandomTree",
+"weka.classifiers.trees.J48",
 "weka.classifiers.trees.RandomForest",
 "weka.classifiers.rules.JRip",
 "weka.classifiers.rules.PART",
@@ -141,14 +140,22 @@ def train_classifiers(classifier_list, data):
 		evaluation.crossvalidate_model(object, data, 10, Random(2233))
 		object.build_classifier(data)
 		
+		acc = evaluation.percent_correct
+		auc = evaluation.area_under_roc(1)
+		rec = evaluation.recall(1)
+		if (math.isnan(acc) or math.isnan(auc) or math.isnan(rec) or rec < 0.02):
+			acc = float('nan')
+			auc = float('nan')
+			rec = float('nan')
+		
 		print("Result for", classifier)
-		print("Accuracy:", evaluation.percent_correct)
-		print("AUC:", evaluation.area_under_roc(1))
-		print("Recall:", evaluation.recall(1))
+		print("Accuracy:", acc)
+		print("AUC:", auc)
+		print("Recall:", rec)
 		print()
 		
 		classifier_objects.append(object)
-		results.append([evaluation.percent_correct, evaluation.area_under_roc(1), evaluation.recall(1)])
+		results.append([acc, auc, rec])
 	return classifier_objects, results
 
 # Test a list of classifiers
@@ -161,13 +168,21 @@ def test_classifiers(classifiers, classifier_names, data, label):
 		evaluation = Evaluation(data)
 		evaluation.test_model(classifiers[i], data)
 		
+		acc = evaluation.percent_correct
+		auc = evaluation.area_under_roc(1)
+		rec = evaluation.recall(1)
+		if (math.isnan(acc) or math.isnan(auc) or math.isnan(rec) or rec < 0.02):
+			acc = float('nan')
+			auc = float('nan')
+			rec = float('nan')
+		
 		print("Result for", classifier_names[i])
-		print("Accuracy:", evaluation.percent_correct)
-		print("AUC:", evaluation.area_under_roc(1))
-		print("Recall:", evaluation.recall(1))
+		print("Accuracy:", acc)
+		print("AUC:", auc)
+		print("Recall:", rec)
 		print()
 		
-		results.append([evaluation.percent_correct, evaluation.area_under_roc(1), evaluation.recall(1)])
+		results.append([acc, auc, rec])
 	return results
 
 # Split data, collect the training data, also preprocess a bit
@@ -177,114 +192,152 @@ for i in range(len(splitted)):
 	splitted[i].delete_attribute(splitted[i].attribute_by_name('FirstSeenDate').index)
 	splitted[i].delete_attribute(splitted[i].attribute_by_name('TimeDateStamp').index)
 	splitted[i].class_is_last()
+	splitted[i] = apply_balance(splitted[i])
 
-if (train_mode == 'start'):
-	train_data = splitted[0]
-	for next in range(1, train_split):
-		train_data = train_data.append_instances(train_data, splitted[next])
-	train_data = apply_balance(train_data)
-	train_label = "1-" + str(train_split * group_size)
-
-	for i in range(len(splitted)):
-		splitted[i] = apply_balance(splitted[i])
-
-	# Train the models
-	label_list = [train_label]
-	classifiers, train_results = train_classifiers(classifier_list, train_data)
-	result_list = [train_results]
-
-	# Test the models
-	for i in range(train_split, len(splitted)):
-		result = test_classifiers(classifiers, classifier_list, splitted[i], labels[i])
-		label_list.append(labels[i])
-		result_list.append(result)
-else:
+def run_slide(classifier, data, train_split):
 	label_list = []
 	result_list = []
-	
+
 	start_pos = 1
 	if (train_mode == 'relative_strict'):
 		start_pos = train_split
-	
-	for i in range(start_pos, len(splitted)):
-		print("Evaluating group", labels[i])
-		
-		train_data = splitted[i - 1]
-		for next in range(1, train_split):
-			pos = i - 1 - next
-			if (pos < 0):
-				break
-			train_data = train_data.append_instances(train_data, splitted[pos])
-		
-		classifiers = build_classifiers(classifier_list, train_data)
-		result = test_classifiers(classifiers, classifier_list, splitted[i], labels[i])
-		label_list.append(labels[i])
-		result_list.append(result)
 
-# Gather the data into a plot-friendly format (dimensions: model, result, type (accuracy or recall))
-model_accuracy = []
-model_auc = []
-model_recall = []
-for i in range(len(classifier_list)):
-	results_accuracy = []
-	results_auc = []
-	results_recall = []
-	for j in range(len(result_list)):
-		results_accuracy.append(result_list[j][i][0])
-		results_auc.append(result_list[j][i][1])
-		results_recall.append(result_list[j][i][2])
-	model_accuracy.append(results_accuracy)
-	model_auc.append(results_auc)
-	model_recall.append(results_recall)
+	# Run the evaluation
+	if (start_pos < len(splitted)):
+		for i in range(start_pos, len(splitted)):
+			# manually exclude first 10,000
+			num = int(labels[i].split("-")[-1])
+			if (num <= 10000):
+				continue
+			
+			print("Evaluating group", labels[i])
+			
+			train_data = splitted[i - 1]
+			for next in range(1, train_split):
+				pos = i - 1 - next
+				if (pos < 0):
+					break
+				train_data = train_data.append_instances(train_data, splitted[pos])
+			
+			classifiers = build_classifiers([classifier], train_data)
+			result = test_classifiers(classifiers, [classifier], splitted[i], labels[i])
+			label_list.append(labels[i])
+			result_list.append(result)
+	return label_list, result_list
 
 # Extract the model's name from its Weka filepath (example: weka.classifiers.trees.J48 -> J48)
 def nice_title(title):
 	return title.split('.')[-1]
 
-# Plot the data
-plt.rcParams['xtick.labelsize'] = 7
-figure, (ax1, ax2, ax3) = plt.subplots(nrows = 1, ncols = 3, figsize = (13.0, 7.0))
-
-ax1.set_title("Accuracy")
-ax1.set_xlabel("Test group")
-for i in range(len(model_accuracy)):
-	ax1.plot(label_list, model_accuracy[i], label = nice_title(classifier_list[i]))
-ax1.set_xticklabels(label_list, rotation=45, ha='right')
-ax1.legend()
-
-ax2.set_title("AUC")
-ax2.set_xlabel("Test group")
-for i in range(len(model_recall)):
-	ax2.plot(label_list, model_auc[i], label = nice_title(classifier_list[i]))
-ax2.set_xticklabels(label_list, rotation=45, ha='right')
-ax2.legend()
-
-ax3.set_title("Recall")
-ax3.set_xlabel("Test group")
-for i in range(len(model_recall)):
-	ax3.plot(label_list, model_recall[i], label = nice_title(classifier_list[i]))
-ax3.set_xticklabels(label_list, rotation=45, ha='right')
-ax3.legend()
-
-# Save models, if applicable
-print("Run ID:", RUN_ID)
-
 parent_dir = os.getcwd()
+
 if (save):
 	os.mkdir(os.path.join(parent_dir, RUN_ID))
-	for i in range(len(classifier_list)):
-		classifiers[i].serialize(RUN_ID + "/" + nice_title(classifier_list[i]) + " (" + RUN_ID + ")" + ".model", train_data)
+
+for classifier in classifier_list:
+	print("Running model", classifier)
+	label_list = []
+	result_list = []
+	for winsize in window_sizes:
+		label_results, results = run_slide(classifier, data, winsize)
+		label_list.append(label_results)
+		result_list.append(results)
+		
+	results_accuracy = []
+	results_auc = []
+	results_recall = []
+	for i in range(len(window_sizes)):
+		result_acc = []
+		result_auc = []
+		result_rec = []
+		for j in range(len(result_list[i])):
+			result_acc.append(result_list[i][j][0][0])
+			result_auc.append(result_list[i][j][0][1])
+			result_rec.append(result_list[i][j][0][2])
+		results_accuracy.append(result_acc)
+		results_auc.append(result_auc)
+		results_recall.append(result_rec)
+		
+	# Plot the data
+	plt.rcParams['xtick.labelsize'] = 7
+
+	title = nice_title(classifier)
 	
-	plt.savefig(RUN_ID + "/" + "Results" + " (" + RUN_ID + ")" + ".png", bbox_inches='tight')
+	plt.figure(figsize = (13, 7))
+	plt.title("Accuracy (" + title + ")")
+	plt.xlabel("Test group")
+	for i in range(len(window_sizes)):
+		winsize = window_sizes[i]
+		if (winsize >= len(splitted)):
+			winsize = "All previous"
+		plt.plot(label_list[i], results_accuracy[i], label = str(winsize) + " groups")
+	plt.xticks(label_list[-1], rotation=45, ha='right')
+	plt.legend()
+			
+	if (save):
+		plt.savefig(RUN_ID + "/" + "Accuracy - " + title + " (" + RUN_ID + ")" + ".png", bbox_inches='tight')
+		
+	plt.clf()
+
+	plt.figure(figsize = (13, 7))
+	plt.title("AUC (" + title + ")")
+	plt.xlabel("Test group (" + title + ")")
+	for i in range(len(window_sizes)):
+		winsize = window_sizes[i]
+		if (winsize >= len(splitted)):
+			winsize = "All previous"
+		plt.plot(label_list[i], results_auc[i], label = str(winsize) + " groups")
+	plt.xticks(label_list[-1], rotation=45, ha='right')
+	plt.legend()
 	
-	saver = Saver(classname = "weka.core.converters.ArffSaver")
-	if (train_mode == 'start'):
-		saver.save_file(train_data, RUN_ID + "/" + "train_" + train_label + ".arff")
-	for i in range(len(splitted)):
-		saver.save_file(splitted[i], RUN_ID + "/" + "test_" + labels[i] + ".arff")
+	if (save):
+		plt.savefig(RUN_ID + "/" + "AUC - " + title + " (" + RUN_ID + ")" + ".png", bbox_inches='tight')
+	
+	plt.clf()
+	
+	plt.figure(figsize = (13, 7))
+	plt.title("Recall (" + title + ")")
+	plt.xlabel("Test group (" + title + ")")
+	for i in range(len(window_sizes)):
+		winsize = window_sizes[i]
+		if (winsize >= len(splitted)):
+			winsize = "All previous"
+		plt.plot(label_list[i], results_recall[i], label = str(winsize) + " groups")
+	plt.xticks(label_list[-1], rotation=45, ha='right')
+	plt.legend()
+	
+	if (save):
+		plt.savefig(RUN_ID + "/" + "Recall - " + title + " (" + RUN_ID + ")" + ".png", bbox_inches='tight')
+		
+	plt.clf()
+	
+	if (save):
+		with open(RUN_ID + "/" + title + " (" + RUN_ID + ")" + ".txt", "w") as f:
+			f.write(str(window_sizes) + '\n')
+			f.write(str(label_list) + '\n')
+			f.write(str(results_accuracy) + '\n')
+			f.write(str(results_auc) + '\n')
+			f.write(str(results_recall) + '\n')
+	
+	print("Model", classifier, "complete.")
+
+# Save models, if applicable
+# print("Run ID:", RUN_ID)
+
+# parent_dir = os.getcwd()
+# if (save):
+	# os.mkdir(os.path.join(parent_dir, RUN_ID))
+	
+	# plt.savefig(RUN_ID + "/" + "Results" + " (" + RUN_ID + ")" + ".png", bbox_inches='tight')
+	
+	# saver = Saver(classname = "weka.core.converters.ArffSaver")
+	# if (train_mode == 'start'):
+		# saver.save_file(train_data, RUN_ID + "/" + "train_" + train_label + ".arff")
+	# for i in range(len(splitted)):
+		# saver.save_file(splitted[i], RUN_ID + "/" + "test_" + labels[i] + ".arff")
 
 # Display the plot
-plt.show()	
+# plt.show()	
 
 # Stop the JVM, quit the program
 jvm.stop()
