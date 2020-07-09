@@ -17,6 +17,10 @@ import matplotlib
 # do stuff per model
 # show sliding window vs. full past
 # multiple sliding windows
+# also run with size=2000?
+# if one thing is nan, make them all nan - consistency
+# save values (like a csv)
+# first 10000 - all goodware
 
 # Start the JVM for Weka
 jvm.start()
