@@ -1,8 +1,10 @@
+# Some information about the command-line arguments
+
 **balance**
 
 Default value: true
-A boolean indicator for whether the dataset should be balanced using the filter you talked about. 
 
+A boolean indicator for whether the dataset should be balanced using the filter you talked about. 
 To make it false, the value must be exactly equal to "false" (non-case-sensitive), otherwise, it will be true.
 
 **filename**
