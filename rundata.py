@@ -100,20 +100,20 @@ def apply_balance(data):
 
 # A list of classifiers
 classifier_list = [
-"weka.classifiers.trees.J48",
-"weka.classifiers.trees.RandomTree",
-"weka.classifiers.trees.RandomForest",
-"weka.classifiers.rules.JRip",
-"weka.classifiers.rules.PART",
-"weka.classifiers.lazy.IBk"
+["weka.classifiers.trees.J48", ""],
+["weka.classifiers.trees.RandomTree", ""],
+["weka.classifiers.trees.RandomForest", ""],
+["weka.classifiers.rules.JRip", ""],
+["weka.classifiers.rules.PART", ""],
+["weka.classifiers.lazy.IBk", ""]
 ]
 
 # Builds a list of classifiers without evaluating them
 def build_classifiers(classifier_list, data):
 	classifier_objects = []
 	for classifier in classifier_list:
-		print("Building classifier", classifier + "...")
-		object = Classifier(classname = classifier)
+		print("Building classifier", classifier[0] + "...")
+		object = Classifier(classname = classifier[0], options = classifier[1])
 		object.build_classifier(data)
 		classifier_objects.append(object)
 	return classifier_objects
@@ -125,8 +125,8 @@ def train_classifiers(classifier_list, data):
 	
 	print("Training results:\n")
 	for classifier in classifier_list:
-		print("Training classifier", classifier + "...")
-		object = Classifier(classname = classifier)
+		print("Training classifier", classifier[0] + "...")
+		object = Classifier(classname = classifier[0], options = classifier[1])
 		evaluation = Evaluation(data)
 		evaluation.crossvalidate_model(object, data, 10, Random(2233))
 		object.build_classifier(data)
@@ -134,19 +134,22 @@ def train_classifiers(classifier_list, data):
 		acc = evaluation.percent_correct
 		auc = evaluation.area_under_roc(1)
 		rec = evaluation.recall(1)
-		if (math.isnan(acc) or math.isnan(auc) or math.isnan(rec) or rec < 0.02):
+		pre = evaluation.precision(1)
+		if (math.isnan(acc) or math.isnan(auc) or math.isnan(rec) or math.isnan(pre) or rec < 0.02):
 			acc = float('nan')
 			auc = float('nan')
 			rec = float('nan')
+			pre = float('nan')
 		
-		print("Result for", classifier)
+		print("Result for", classifier[0])
 		print("Accuracy:", acc)
 		print("AUC:", auc)
 		print("Recall:", rec)
+		print("Precision:", pre)
 		print()
 		
 		classifier_objects.append(object)
-		results.append([acc, auc, rec])
+		results.append([acc, auc, rec, pre])
 	return classifier_objects, results
 
 # Test a list of classifiers
@@ -155,25 +158,28 @@ def test_classifiers(classifiers, classifier_names, data, label):
 	print("Testing results (label:", label + "):\n")
 	
 	for i in range(len(classifiers)):
-		print("Testing classifier", classifier_names[i] + "...")
+		print("Testing classifier", classifier_names[i][0] + "...")
 		evaluation = Evaluation(data)
 		evaluation.test_model(classifiers[i], data)
 		
 		acc = evaluation.percent_correct
 		auc = evaluation.area_under_roc(1)
 		rec = evaluation.recall(1)
-		if (math.isnan(acc) or math.isnan(auc) or math.isnan(rec) or rec < 0.02):
+		pre = evaluation.precision(1)
+		if (math.isnan(acc) or math.isnan(auc) or math.isnan(rec) or math.isnan(pre) or rec < 0.02):
 			acc = float('nan')
 			auc = float('nan')
 			rec = float('nan')
+			pre = float('nan')
 		
-		print("Result for", classifier_names[i])
+		print("Result for", classifier_names[i][0])
 		print("Accuracy:", acc)
 		print("AUC:", auc)
 		print("Recall:", rec)
+		print("Precision:", pre)
 		print()
 		
-		results.append([acc, auc, rec])
+		results.append([acc, auc, rec, pre])
 	return results
 
 # Split data, collect the training data, also preprocess a bit
@@ -208,17 +214,21 @@ for i in range(train_split, len(splitted)):
 model_accuracy = []
 model_auc = []
 model_recall = []
+model_precision = []
 for i in range(len(classifier_list)):
 	results_accuracy = []
 	results_auc = []
 	results_recall = []
+	results_precision = []
 	for j in range(len(result_list)):
 		results_accuracy.append(result_list[j][i][0])
 		results_auc.append(result_list[j][i][1])
 		results_recall.append(result_list[j][i][2])
+		results_precision.append(result_list[j][i][3])
 	model_accuracy.append(results_accuracy)
 	model_auc.append(results_auc)
 	model_recall.append(results_recall)
+	model_precision.append(results_precision)
 
 # Extract the model's name from its Weka filepath (example: weka.classifiers.trees.J48 -> J48)
 def nice_title(title):
@@ -226,28 +236,41 @@ def nice_title(title):
 
 # Plot the data
 plt.rcParams['xtick.labelsize'] = 7
-figure, (ax1, ax2, ax3) = plt.subplots(nrows = 1, ncols = 3, figsize = (13.0, 7.0))
+figure, ax = plt.subplots(nrows = 2, ncols = 2, figsize = (13.0, 7.0))
 
-ax1.set_title("Accuracy")
-ax1.set_xlabel("Test group")
+ax[0][0].set_title("Accuracy")
+ax[0][0].set_xlabel("Test group")
 for i in range(len(model_accuracy)):
-	ax1.plot(label_list, model_accuracy[i], label = nice_title(classifier_list[i]))
-ax1.set_xticklabels(label_list, rotation=45, ha='right')
-ax1.legend()
+	ax[0][0].plot(label_list, model_accuracy[i], label = nice_title(classifier_list[i][0]))
+ax[0][0].set_xticklabels(label_list, rotation=45, ha='right')
+ax[0][0].legend()
+ax[0][0].set_ylim(0, 100)
 
-ax2.set_title("AUC")
-ax2.set_xlabel("Test group")
+ax[0][1].set_title("AUC")
+ax[0][1].set_xlabel("Test group")
 for i in range(len(model_recall)):
-	ax2.plot(label_list, model_auc[i], label = nice_title(classifier_list[i]))
-ax2.set_xticklabels(label_list, rotation=45, ha='right')
-ax2.legend()
+	ax[0][1].plot(label_list, model_auc[i], label = nice_title(classifier_list[i][0]))
+ax[0][1].set_xticklabels(label_list, rotation=45, ha='right')
+ax[0][1].legend()
+ax[0][1].set_ylim(0, 1)
 
-ax3.set_title("Recall")
-ax3.set_xlabel("Test group")
+ax[1][0].set_title("Recall")
+ax[1][0].set_xlabel("Test group")
 for i in range(len(model_recall)):
-	ax3.plot(label_list, model_recall[i], label = nice_title(classifier_list[i]))
-ax3.set_xticklabels(label_list, rotation=45, ha='right')
-ax3.legend()
+	ax[1][0].plot(label_list, model_recall[i], label = nice_title(classifier_list[i][0]))
+ax[1][0].set_xticklabels(label_list, rotation=45, ha='right')
+ax[1][0].legend()
+ax[1][0].set_ylim(0, 1)
+
+ax[1][1].set_title("Precision")
+ax[1][1].set_xlabel("Test group")
+for i in range(len(model_precision)):
+	ax[1][1].plot(label_list, model_precision[i], label = nice_title(classifier_list[i][0]))
+ax[1][1].set_xticklabels(label_list, rotation=45, ha='right')
+ax[1][1].legend()
+ax[1][1].set_ylim(0, 1)
+
+figure.tight_layout()
 
 # Save models, if applicable
 print("Run ID:", RUN_ID)
@@ -264,7 +287,7 @@ if (save):
 		f.write(cmd + '\n')
 	
 	for i in range(len(classifier_list)):
-		classifiers[i].serialize(RUN_ID + "/" + nice_title(classifier_list[i]) + " (" + RUN_ID + ")" + ".model", train_data)
+		classifiers[i].serialize(RUN_ID + "/" + nice_title(classifier_list[i][0]) + " (" + RUN_ID + ")" + ".model", train_data)
 	
 	plt.savefig(RUN_ID + "/" + "Results" + " (" + RUN_ID + ")" + ".png", bbox_inches='tight')
 	

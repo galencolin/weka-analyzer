@@ -61,8 +61,9 @@ train_mode = 'start'
 if ('train_mode' in args):
 	train_mode = args['train_mode']
 	
-window_sizes = [5, 10, 100]
+# window_sizes = [5, 10, 100]
 # window_sizes = [1] # just for debugging
+window_sizes = [2, 3, 5]
 
 # Load the data file
 print("Loading file", filename + '...')
@@ -109,20 +110,20 @@ def apply_balance(data):
 
 # A list of classifiers
 classifier_list = [
-"weka.classifiers.trees.RandomTree",
-"weka.classifiers.trees.J48",
-"weka.classifiers.trees.RandomForest",
-"weka.classifiers.rules.JRip",
-"weka.classifiers.rules.PART",
-"weka.classifiers.lazy.IBk"
+["weka.classifiers.trees.RandomTree", ""],
+["weka.classifiers.trees.J48", ""],
+["weka.classifiers.trees.RandomForest", ""],
+["weka.classifiers.rules.JRip", ""],
+["weka.classifiers.rules.PART", ""],
+["weka.classifiers.lazy.IBk", ""]
 ]
 
 # Builds a list of classifiers without evaluating them
 def build_classifiers(classifier_list, data):
 	classifier_objects = []
 	for classifier in classifier_list:
-		print("Building classifier", classifier + "...")
-		object = Classifier(classname = classifier)
+		print("Building classifier", classifier[0] + "...")
+		object = Classifier(classname = classifier[0], options = classifier[1])
 		object.build_classifier(data)
 		classifier_objects.append(object)
 	return classifier_objects
@@ -134,8 +135,8 @@ def train_classifiers(classifier_list, data):
 	
 	print("Training results:\n")
 	for classifier in classifier_list:
-		print("Training classifier", classifier + "...")
-		object = Classifier(classname = classifier)
+		print("Training classifier", classifier[0] + "...")
+		object = Classifier(classname = classifier[0], options = classifier[1])
 		evaluation = Evaluation(data)
 		evaluation.crossvalidate_model(object, data, 10, Random(2233))
 		object.build_classifier(data)
@@ -143,19 +144,22 @@ def train_classifiers(classifier_list, data):
 		acc = evaluation.percent_correct
 		auc = evaluation.area_under_roc(1)
 		rec = evaluation.recall(1)
-		if (math.isnan(acc) or math.isnan(auc) or math.isnan(rec) or rec < 0.02):
+		pre = evaluation.precision(1)
+		if (math.isnan(acc) or math.isnan(auc) or math.isnan(rec) or math.isnan(pre) or rec < 0.02):
 			acc = float('nan')
 			auc = float('nan')
 			rec = float('nan')
+			pre = float('nan')
 		
-		print("Result for", classifier)
+		print("Result for", classifier[0])
 		print("Accuracy:", acc)
 		print("AUC:", auc)
 		print("Recall:", rec)
+		print("Precision:", pre)
 		print()
 		
 		classifier_objects.append(object)
-		results.append([acc, auc, rec])
+		results.append([acc, auc, rec, pre])
 	return classifier_objects, results
 
 # Test a list of classifiers
@@ -164,25 +168,28 @@ def test_classifiers(classifiers, classifier_names, data, label):
 	print("Testing results (label:", label + "):\n")
 	
 	for i in range(len(classifiers)):
-		print("Testing classifier", classifier_names[i] + "...")
+		print("Testing classifier", classifier_names[i][0] + "...")
 		evaluation = Evaluation(data)
 		evaluation.test_model(classifiers[i], data)
 		
 		acc = evaluation.percent_correct
 		auc = evaluation.area_under_roc(1)
 		rec = evaluation.recall(1)
-		if (math.isnan(acc) or math.isnan(auc) or math.isnan(rec) or rec < 0.02):
+		pre = evaluation.precision(1)
+		if (math.isnan(acc) or math.isnan(auc) or math.isnan(rec) or math.isnan(pre) or rec < 0.02):
 			acc = float('nan')
 			auc = float('nan')
 			rec = float('nan')
+			pre = float('nan')
 		
-		print("Result for", classifier_names[i])
+		print("Result for", classifier_names[i][0])
 		print("Accuracy:", acc)
 		print("AUC:", auc)
 		print("Recall:", rec)
+		print("Precision:", pre)
 		print()
 		
-		results.append([acc, auc, rec])
+		results.append([acc, auc, rec, pre])
 	return results
 
 # Split data, collect the training data, also preprocess a bit
@@ -242,7 +249,7 @@ if (save):
 		f.write(cmd + '\n')
 
 for classifier in classifier_list:
-	print("Running model", classifier)
+	print("Running model", classifier[0])
 	label_list = []
 	result_list = []
 	for winsize in window_sizes:
@@ -253,22 +260,27 @@ for classifier in classifier_list:
 	results_accuracy = []
 	results_auc = []
 	results_recall = []
+	results_precision = []
 	for i in range(len(window_sizes)):
 		result_acc = []
 		result_auc = []
 		result_rec = []
+		result_pre = []
 		for j in range(len(result_list[i])):
 			result_acc.append(result_list[i][j][0][0])
 			result_auc.append(result_list[i][j][0][1])
 			result_rec.append(result_list[i][j][0][2])
+			result_pre.append(result_list[i][j][0][3])
 		results_accuracy.append(result_acc)
 		results_auc.append(result_auc)
 		results_recall.append(result_rec)
+		results_precision.append(result_pre)
 		
 	# Plot the data
 	plt.rcParams['xtick.labelsize'] = 7
+	plt.rcParams['figure.max_open_warning'] = 50
 
-	title = nice_title(classifier)
+	title = nice_title(classifier[0])
 	
 	plt.figure(figsize = (13, 7))
 	plt.title("Accuracy (" + title + ")")
@@ -280,6 +292,7 @@ for classifier in classifier_list:
 		plt.plot(label_list[i], results_accuracy[i], label = str(winsize) + " groups")
 	plt.xticks(label_list[-1], rotation=45, ha='right')
 	plt.legend()
+	plt.ylim(0, 100)
 			
 	if (save):
 		plt.savefig(RUN_ID + "/" + "Accuracy - " + title + " (" + RUN_ID + ")" + ".png", bbox_inches='tight')
@@ -296,6 +309,7 @@ for classifier in classifier_list:
 		plt.plot(label_list[i], results_auc[i], label = str(winsize) + " groups")
 	plt.xticks(label_list[-1], rotation=45, ha='right')
 	plt.legend()
+	plt.ylim(0, 1)
 	
 	if (save):
 		plt.savefig(RUN_ID + "/" + "AUC - " + title + " (" + RUN_ID + ")" + ".png", bbox_inches='tight')
@@ -312,9 +326,27 @@ for classifier in classifier_list:
 		plt.plot(label_list[i], results_recall[i], label = str(winsize) + " groups")
 	plt.xticks(label_list[-1], rotation=45, ha='right')
 	plt.legend()
+	plt.ylim(0, 1)
 	
 	if (save):
 		plt.savefig(RUN_ID + "/" + "Recall - " + title + " (" + RUN_ID + ")" + ".png", bbox_inches='tight')
+		
+	plt.clf()
+	
+	plt.figure(figsize = (13, 7))
+	plt.title("Precision (" + title + ")")
+	plt.xlabel("Test group (" + title + ")")
+	for i in range(len(window_sizes)):
+		winsize = window_sizes[i]
+		if (winsize >= len(splitted)):
+			winsize = "All previous"
+		plt.plot(label_list[i], results_precision[i], label = str(winsize) + " groups")
+	plt.xticks(label_list[-1], rotation=45, ha='right')
+	plt.legend()
+	plt.ylim(0, 1)
+	
+	if (save):
+		plt.savefig(RUN_ID + "/" + "Precision - " + title + " (" + RUN_ID + ")" + ".png", bbox_inches='tight')
 		
 	plt.clf()
 	
@@ -325,8 +357,9 @@ for classifier in classifier_list:
 			f.write(str(results_accuracy) + '\n')
 			f.write(str(results_auc) + '\n')
 			f.write(str(results_recall) + '\n')
+			f.write(str(results_precision) + '\n')
 	
-	print("Model", classifier, "complete.")
+	print("Model", classifier[0], "complete.")
 
 # Save models, if applicable
 # print("Run ID:", RUN_ID)
