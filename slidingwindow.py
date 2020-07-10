@@ -199,7 +199,6 @@ for i in range(len(splitted)):
 	splitted[i].delete_attribute(splitted[i].attribute_by_name('FirstSeenDate').index)
 	splitted[i].delete_attribute(splitted[i].attribute_by_name('TimeDateStamp').index)
 	splitted[i].class_is_last()
-	splitted[i] = apply_balance(splitted[i])
 
 def run_slide(classifier, data, train_split):
 	label_list = []
@@ -226,8 +225,10 @@ def run_slide(classifier, data, train_split):
 					break
 				train_data = train_data.append_instances(train_data, splitted[pos])
 			
+			train_data = apply_balance(train_data)
+			
 			classifiers = build_classifiers([classifier], train_data)
-			result = test_classifiers(classifiers, [classifier], splitted[i], labels[i])
+			result = test_classifiers(classifiers, [classifier], apply_balance(splitted[i]), labels[i])
 			label_list.append(labels[i])
 			result_list.append(result)
 	return label_list, result_list
@@ -292,7 +293,7 @@ for classifier in classifier_list:
 		plt.plot(label_list[i], results_accuracy[i], label = str(winsize) + " groups")
 	plt.xticks(label_list[-1], rotation=45, ha='right')
 	plt.legend()
-	plt.ylim(0, 100)
+	plt.ylim(0, 100.5)
 			
 	if (save):
 		plt.savefig(RUN_ID + "/" + "Accuracy - " + title + " (" + RUN_ID + ")" + ".png", bbox_inches='tight')
@@ -309,7 +310,7 @@ for classifier in classifier_list:
 		plt.plot(label_list[i], results_auc[i], label = str(winsize) + " groups")
 	plt.xticks(label_list[-1], rotation=45, ha='right')
 	plt.legend()
-	plt.ylim(0, 1)
+	plt.ylim(0, 1.005)
 	
 	if (save):
 		plt.savefig(RUN_ID + "/" + "AUC - " + title + " (" + RUN_ID + ")" + ".png", bbox_inches='tight')
@@ -326,7 +327,7 @@ for classifier in classifier_list:
 		plt.plot(label_list[i], results_recall[i], label = str(winsize) + " groups")
 	plt.xticks(label_list[-1], rotation=45, ha='right')
 	plt.legend()
-	plt.ylim(0, 1)
+	plt.ylim(0, 1.005)
 	
 	if (save):
 		plt.savefig(RUN_ID + "/" + "Recall - " + title + " (" + RUN_ID + ")" + ".png", bbox_inches='tight')
@@ -343,7 +344,7 @@ for classifier in classifier_list:
 		plt.plot(label_list[i], results_precision[i], label = str(winsize) + " groups")
 	plt.xticks(label_list[-1], rotation=45, ha='right')
 	plt.legend()
-	plt.ylim(0, 1)
+	plt.ylim(0, 1.005)
 	
 	if (save):
 		plt.savefig(RUN_ID + "/" + "Precision - " + title + " (" + RUN_ID + ")" + ".png", bbox_inches='tight')

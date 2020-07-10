@@ -244,7 +244,7 @@ for i in range(len(model_accuracy)):
 	ax[0][0].plot(label_list, model_accuracy[i], label = nice_title(classifier_list[i][0]))
 ax[0][0].set_xticklabels(label_list, rotation=45, ha='right')
 ax[0][0].legend()
-ax[0][0].set_ylim(0, 100)
+ax[0][0].set_ylim(0, 100.5)
 
 ax[0][1].set_title("AUC")
 ax[0][1].set_xlabel("Test group")
@@ -252,7 +252,7 @@ for i in range(len(model_recall)):
 	ax[0][1].plot(label_list, model_auc[i], label = nice_title(classifier_list[i][0]))
 ax[0][1].set_xticklabels(label_list, rotation=45, ha='right')
 ax[0][1].legend()
-ax[0][1].set_ylim(0, 1)
+ax[0][1].set_ylim(0, 1.005)
 
 ax[1][0].set_title("Recall")
 ax[1][0].set_xlabel("Test group")
@@ -260,7 +260,7 @@ for i in range(len(model_recall)):
 	ax[1][0].plot(label_list, model_recall[i], label = nice_title(classifier_list[i][0]))
 ax[1][0].set_xticklabels(label_list, rotation=45, ha='right')
 ax[1][0].legend()
-ax[1][0].set_ylim(0, 1)
+ax[1][0].set_ylim(0, 1.005)
 
 ax[1][1].set_title("Precision")
 ax[1][1].set_xlabel("Test group")
@@ -268,7 +268,7 @@ for i in range(len(model_precision)):
 	ax[1][1].plot(label_list, model_precision[i], label = nice_title(classifier_list[i][0]))
 ax[1][1].set_xticklabels(label_list, rotation=45, ha='right')
 ax[1][1].legend()
-ax[1][1].set_ylim(0, 1)
+ax[1][1].set_ylim(0, 1.005)
 
 figure.tight_layout()
 
