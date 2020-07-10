@@ -1,0 +1,1 @@
+python slidingwindow.py 'filename=brazilian malware - processed notext.arff' train_split=1 

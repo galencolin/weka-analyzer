@@ -233,6 +233,13 @@ parent_dir = os.getcwd()
 
 if (save):
 	os.mkdir(os.path.join(parent_dir, RUN_ID))
+	with open(RUN_ID + "/" + "log.txt", "w") as f:
+		cmd = 'python '
+		for arg in sys.argv:
+			if (' ' in arg):
+				arg = "\"" + arg + "\""
+			cmd += arg + ' '
+		f.write(cmd + '\n')
 
 for classifier in classifier_list:
 	print("Running model", classifier)

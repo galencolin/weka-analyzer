@@ -5,6 +5,7 @@
 import sys
 import os
 import datetime
+import math
 
 import weka.core.jvm as jvm
 from weka.core.converters import Loader, Saver
@@ -130,14 +131,22 @@ def train_classifiers(classifier_list, data):
 		evaluation.crossvalidate_model(object, data, 10, Random(2233))
 		object.build_classifier(data)
 		
+		acc = evaluation.percent_correct
+		auc = evaluation.area_under_roc(1)
+		rec = evaluation.recall(1)
+		if (math.isnan(acc) or math.isnan(auc) or math.isnan(rec) or rec < 0.02):
+			acc = float('nan')
+			auc = float('nan')
+			rec = float('nan')
+		
 		print("Result for", classifier)
-		print("Accuracy:", evaluation.percent_correct)
-		print("AUC:", evaluation.area_under_roc(1))
-		print("Recall:", evaluation.recall(1))
+		print("Accuracy:", acc)
+		print("AUC:", auc)
+		print("Recall:", rec)
 		print()
 		
 		classifier_objects.append(object)
-		results.append([evaluation.percent_correct, evaluation.area_under_roc(1), evaluation.recall(1)])
+		results.append([acc, auc, rec])
 	return classifier_objects, results
 
 # Test a list of classifiers
@@ -150,13 +159,21 @@ def test_classifiers(classifiers, classifier_names, data, label):
 		evaluation = Evaluation(data)
 		evaluation.test_model(classifiers[i], data)
 		
+		acc = evaluation.percent_correct
+		auc = evaluation.area_under_roc(1)
+		rec = evaluation.recall(1)
+		if (math.isnan(acc) or math.isnan(auc) or math.isnan(rec) or rec < 0.02):
+			acc = float('nan')
+			auc = float('nan')
+			rec = float('nan')
+		
 		print("Result for", classifier_names[i])
-		print("Accuracy:", evaluation.percent_correct)
-		print("AUC:", evaluation.area_under_roc(1))
-		print("Recall:", evaluation.recall(1))
+		print("Accuracy:", acc)
+		print("AUC:", auc)
+		print("Recall:", rec)
 		print()
 		
-		results.append([evaluation.percent_correct, evaluation.area_under_roc(1), evaluation.recall(1)])
+		results.append([acc, auc, rec])
 	return results
 
 # Split data, collect the training data, also preprocess a bit
@@ -238,6 +255,14 @@ print("Run ID:", RUN_ID)
 parent_dir = os.getcwd()
 if (save):
 	os.mkdir(os.path.join(parent_dir, RUN_ID))
+	with open(RUN_ID + "/" + "log.txt", "w") as f:
+		cmd = 'python '
+		for arg in sys.argv:
+			if (' ' in arg):
+				arg = "\"" + arg + "\""
+			cmd += arg + ' '
+		f.write(cmd + '\n')
+	
 	for i in range(len(classifier_list)):
 		classifiers[i].serialize(RUN_ID + "/" + nice_title(classifier_list[i]) + " (" + RUN_ID + ")" + ".model", train_data)
 	
