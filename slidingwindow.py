@@ -361,24 +361,6 @@ for classifier in classifier_list:
 	
 	print("Model", classifier[0], "complete.")
 
-# Save models, if applicable
-# print("Run ID:", RUN_ID)
-
-# parent_dir = os.getcwd()
-# if (save):
-	# os.mkdir(os.path.join(parent_dir, RUN_ID))
-	
-	# plt.savefig(RUN_ID + "/" + "Results" + " (" + RUN_ID + ")" + ".png", bbox_inches='tight')
-	
-	# saver = Saver(classname = "weka.core.converters.ArffSaver")
-	# if (train_mode == 'start'):
-		# saver.save_file(train_data, RUN_ID + "/" + "train_" + train_label + ".arff")
-	# for i in range(len(splitted)):
-		# saver.save_file(splitted[i], RUN_ID + "/" + "test_" + labels[i] + ".arff")
-
-# Display the plot
-# plt.show()	
-
 # Stop the JVM, quit the program
 jvm.stop()
 sys.exit(0)
