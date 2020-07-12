@@ -1,0 +1,1 @@
+python rundata.py group_size=5 splitby=month train_split=50 

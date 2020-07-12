@@ -1,0 +1,33 @@
+@relation 'brazilian-malware - actually processed-weka.filters.unsupervised.attribute.Reorder-R1,2,3,4,5,6,7,8,9,10,11,13,14,15,16,17,18,19,20,21,22,23,12-weka.filters.unsupervised.attribute.StringToNominal-Rlast-weka.filters.unsupervised.attribute.NumericToNominal-Rlast-weka.filters.unsupervised.attribute.NominalToString-Cfirst-last-weka.filters.unsupervised.attribute.StringToNominal-Rlast-weka.filters.unsupervised.attribute.Remove-R8,10-11-weka.filters.unsupervised.instance.RemoveRange-V-R2191-2201-weka.filters.MultiFilter-Fweka.filters.unsupervised.instance.RemoveRange -V -R 2191-2201-weka.filters.supervised.instance.Resample-B1.0-S1-Z100.0'
+
+@attribute BaseOfCode numeric
+@attribute BaseOfData numeric
+@attribute Characteristics numeric
+@attribute DllCharacteristics numeric
+@attribute Entropy numeric
+@attribute FileAlignment numeric
+@attribute ImageBase numeric
+@attribute Machine numeric
+@attribute NumberOfRvaAndSizes numeric
+@attribute NumberOfSections numeric
+@attribute NumberOfSymbols numeric
+@attribute Size numeric
+@attribute SizeOfCode numeric
+@attribute SizeOfHeaders numeric
+@attribute SizeOfImage numeric
+@attribute SizeOfInitializedData numeric
+@attribute SizeOfUninitializedData numeric
+@attribute Label {0,1}
+
+@data
+4096,53248,8462,0,6.483038,512,4194304,332,16,4,0,62672,48128,1024,73728,13824,0,0
+4096,28672,271,0,7.997993,512,4194304,332,16,5,0,3684365,23552,1024,208896,121344,1024,0
+4096,28672,271,0,7.993952,512,4194304,332,16,5,0,9563416,23552,1024,348160,165376,1024,0
+4096,28672,271,0,7.993952,512,4194304,332,16,5,0,9563416,23552,1024,348160,165376,1024,0
+4096,36864,258,0,6.060633,512,65536,332,16,7,0,52224,42496,1024,69632,8704,0,0
+4096,221184,8462,0,6.689674,512,4194304,332,16,5,0,229584,210944,1024,249856,19456,0,0
+4096,28672,271,0,7.997993,512,4194304,332,16,5,0,3684365,23552,1024,208896,121344,1024,0
+4096,573440,8462,1024,5.966349,512,4194304,332,16,4,0,578560,568832,1024,757760,180736,0,0
+4096,2220032,8462,0,6.688557,512,4194304,332,16,4,0,2388176,2212864,1024,2490368,266752,0,0
+4096,53248,8462,0,6.483038,512,4194304,332,16,4,0,62672,48128,1024,73728,13824,0,0
+4096,28672,271,0,7.997993,512,4194304,332,16,5,0,3684365,23552,1024,208896,121344,1024,0

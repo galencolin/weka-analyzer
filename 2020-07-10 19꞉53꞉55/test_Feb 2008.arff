@@ -1,0 +1,29 @@
+@relation 'brazilian-malware - actually processed-weka.filters.unsupervised.attribute.Reorder-R1,2,3,4,5,6,7,8,9,10,11,13,14,15,16,17,18,19,20,21,22,23,12-weka.filters.unsupervised.attribute.StringToNominal-Rlast-weka.filters.unsupervised.attribute.NumericToNominal-Rlast-weka.filters.unsupervised.attribute.NominalToString-Cfirst-last-weka.filters.unsupervised.attribute.StringToNominal-Rlast-weka.filters.unsupervised.attribute.Remove-R8,10-11-weka.filters.unsupervised.instance.RemoveRange-V-R2562-2568-weka.filters.MultiFilter-Fweka.filters.unsupervised.instance.RemoveRange -V -R 2562-2568-weka.filters.supervised.instance.Resample-B1.0-S1-Z100.0'
+
+@attribute BaseOfCode numeric
+@attribute BaseOfData numeric
+@attribute Characteristics numeric
+@attribute DllCharacteristics numeric
+@attribute Entropy numeric
+@attribute FileAlignment numeric
+@attribute ImageBase numeric
+@attribute Machine numeric
+@attribute NumberOfRvaAndSizes numeric
+@attribute NumberOfSections numeric
+@attribute NumberOfSymbols numeric
+@attribute Size numeric
+@attribute SizeOfCode numeric
+@attribute SizeOfHeaders numeric
+@attribute SizeOfImage numeric
+@attribute SizeOfInitializedData numeric
+@attribute SizeOfUninitializedData numeric
+@attribute Label {0,1}
+
+@data
+4096,28672,271,0,7.956252,512,4194304,332,16,5,0,891760,23040,1024,212992,119808,1024,0
+4096,28672,271,0,7.956252,512,4194304,332,16,5,0,891760,23040,1024,212992,119808,1024,0
+4096,32768,271,0,4.844481,4096,4194304,332,16,4,0,81920,28672,4096,81920,49152,0,0
+4096,450560,271,0,7.24319,4096,4194304,332,16,4,0,990802,446464,4096,651264,184320,0,0
+4096,1138688,783,0,6.13304,512,4194304,332,16,6,0,1433088,1134080,1024,1474560,1432064,26112,0
+4096,1138688,783,0,6.13304,512,4194304,332,16,6,0,1433088,1134080,1024,1474560,1432064,26112,0
+4096,450560,271,0,7.24319,4096,4194304,332,16,4,0,990802,446464,4096,651264,184320,0,0

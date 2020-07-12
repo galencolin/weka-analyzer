@@ -1,0 +1,30 @@
+@relation 'brazilian-malware - actually processed-weka.filters.unsupervised.attribute.Reorder-R1,2,3,4,5,6,7,8,9,10,11,13,14,15,16,17,18,19,20,21,22,23,12-weka.filters.unsupervised.attribute.StringToNominal-Rlast-weka.filters.unsupervised.attribute.NumericToNominal-Rlast-weka.filters.unsupervised.attribute.NominalToString-Cfirst-last-weka.filters.unsupervised.attribute.StringToNominal-Rlast-weka.filters.unsupervised.attribute.Remove-R8,10-11-weka.filters.unsupervised.instance.RemoveRange-V-R1546-1553-weka.filters.MultiFilter-Fweka.filters.unsupervised.instance.RemoveRange -V -R 1546-1553-weka.filters.supervised.instance.Resample-B1.0-S1-Z100.0'
+
+@attribute BaseOfCode numeric
+@attribute BaseOfData numeric
+@attribute Characteristics numeric
+@attribute DllCharacteristics numeric
+@attribute Entropy numeric
+@attribute FileAlignment numeric
+@attribute ImageBase numeric
+@attribute Machine numeric
+@attribute NumberOfRvaAndSizes numeric
+@attribute NumberOfSections numeric
+@attribute NumberOfSymbols numeric
+@attribute Size numeric
+@attribute SizeOfCode numeric
+@attribute SizeOfHeaders numeric
+@attribute SizeOfImage numeric
+@attribute SizeOfInitializedData numeric
+@attribute SizeOfUninitializedData numeric
+@attribute Label {0,1}
+
+@data
+4096,40960,775,32768,7.999546,512,16777216,332,16,3,896,25740144,34304,1536,25743360,25692160,0,0
+4096,40960,775,32768,7.879483,512,16777216,332,16,3,896,519568,34304,1536,524288,474112,0,0
+4096,40960,775,32768,7.999557,512,16777216,332,16,3,896,27926896,34304,1536,27930624,27878912,0,0
+4096,40960,775,32768,7.999557,512,16777216,332,16,3,896,27926896,34304,1536,27930624,27878912,0,0
+4096,40960,775,32768,7.999391,512,16777216,332,16,3,896,15516048,34304,1536,15519744,15470592,0,0
+4096,40960,775,32768,7.879483,512,16777216,332,16,3,896,519568,34304,1536,524288,474112,0,0
+4096,40960,775,32768,7.999817,512,16777216,332,16,3,896,60338208,34304,1536,60342272,60292608,0,0
+4096,40960,775,32768,7.999546,512,16777216,332,16,3,896,25740144,34304,1536,25743360,25692160,0,0

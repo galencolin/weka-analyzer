@@ -54,6 +54,10 @@ if ('sortby' in args):
 balance = True
 if ('balance' in args):
 	balance = (args['balance'].lower() != 'false')
+	
+splitby = 'count'
+if ('splitby' in args):
+	splitby = args['splitby'].lower()
 
 # Load the data file
 print("Loading file", filename + '...')
@@ -86,9 +90,63 @@ def split_by_index(data, interval, strict_size = True):
 			labels.append(label)
 			splitted.append(data.subset(row_range = label))
 	return labels, splitted
-	
-# Split the dataset by a certain column's values (for example, in ranges of dates)
-# todo
+
+one_day = 1000 * 60 * 60 * 24
+month_days = [31, 28, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31]
+month_abbr = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"]
+
+def get_time_val(month, year):
+	passed_days = 0
+	for i in range(month):
+		passed_days += month_days[i]
+		if (i == 1 and year % 4 == 0): # leap year
+			passed_days += 1
+			
+	return ((year - 1970) * 365 + passed_days) * one_day
+
+# Split the dataset by months, by FirstSeenDate
+def split_by_month(data, interval, strict_size = True):
+	labels = []
+	splitted = []
+	length = len(data)
+	pointer = 0
+	current_month = 0
+	current_year = 1970
+	date_index = data.attribute_by_name("FirstSeenDate").index
+	while (pointer < length):
+		last_pointer = pointer
+		
+		next_month = current_month + interval
+		next_year = current_year + next_month // 12
+		next_month %= 12
+		
+		interval_start = get_time_val(current_month, current_year)
+		interval_end = get_time_val(next_month, next_year)
+		
+		while (pointer < length):
+			date = data.get_instance(pointer).get_value(date_index)
+			if (interval_start <= date and date < interval_end):
+				pointer += 1
+			else:
+				break
+		
+		if (pointer > last_pointer):
+			month_label = month_abbr[current_month] + " " + str(current_year)
+			if (interval > 1):
+				before_next_month = next_month - 1
+				before_next_year = next_year
+				if (before_next_month < 0):
+					before_next_month += 12
+					before_next_year -= 1
+				month_label += " - " + month_abbr[before_next_month] + " " + str(before_next_year)
+			labels.append(month_label)
+			range_label = str(last_pointer + 1) + "-" + str(pointer)
+			splitted.append(data.subset(row_range = range_label))
+		
+		current_month = next_month
+		current_year = next_year
+		
+	return labels, splitted
 
 # Apply the balancing filter to a dataset
 def apply_balance(data):
@@ -183,7 +241,10 @@ def test_classifiers(classifiers, classifier_names, data, label):
 	return results
 
 # Split data, collect the training data, also preprocess a bit
-labels, splitted = split_by_index(data, group_size)
+if (splitby == 'count'):
+	labels, splitted = split_by_index(data, group_size)
+else:
+	labels, splitted = split_by_month(data, group_size)
 
 for i in range(len(splitted)):
 	splitted[i].delete_attribute(splitted[i].attribute_by_name('FirstSeenDate').index)
@@ -194,7 +255,7 @@ train_data = splitted[0]
 for next in range(1, train_split):
 	train_data = train_data.append_instances(train_data, splitted[next])
 train_data = apply_balance(train_data)
-train_label = "1-" + str(train_split * group_size)
+train_label = "Training set"
 
 for i in range(len(splitted)):
 	splitted[i] = apply_balance(splitted[i])
@@ -234,44 +295,6 @@ for i in range(len(classifier_list)):
 def nice_title(title):
 	return title.split('.')[-1]
 
-# Plot the data
-plt.rcParams['xtick.labelsize'] = 7
-figure, ax = plt.subplots(nrows = 2, ncols = 2, figsize = (13.0, 7.0))
-
-ax[0][0].set_title("Accuracy")
-ax[0][0].set_xlabel("Test group")
-for i in range(len(model_accuracy)):
-	ax[0][0].plot(label_list, model_accuracy[i], label = nice_title(classifier_list[i][0]))
-ax[0][0].set_xticklabels(label_list, rotation=45, ha='right')
-ax[0][0].legend()
-ax[0][0].set_ylim(0, 100.5)
-
-ax[0][1].set_title("AUC")
-ax[0][1].set_xlabel("Test group")
-for i in range(len(model_recall)):
-	ax[0][1].plot(label_list, model_auc[i], label = nice_title(classifier_list[i][0]))
-ax[0][1].set_xticklabels(label_list, rotation=45, ha='right')
-ax[0][1].legend()
-ax[0][1].set_ylim(0, 1.005)
-
-ax[1][0].set_title("Recall")
-ax[1][0].set_xlabel("Test group")
-for i in range(len(model_recall)):
-	ax[1][0].plot(label_list, model_recall[i], label = nice_title(classifier_list[i][0]))
-ax[1][0].set_xticklabels(label_list, rotation=45, ha='right')
-ax[1][0].legend()
-ax[1][0].set_ylim(0, 1.005)
-
-ax[1][1].set_title("Precision")
-ax[1][1].set_xlabel("Test group")
-for i in range(len(model_precision)):
-	ax[1][1].plot(label_list, model_precision[i], label = nice_title(classifier_list[i][0]))
-ax[1][1].set_xticklabels(label_list, rotation=45, ha='right')
-ax[1][1].legend()
-ax[1][1].set_ylim(0, 1.005)
-
-figure.tight_layout()
-
 # Save models, if applicable
 print("Run ID:", RUN_ID)
 
@@ -288,16 +311,72 @@ if (save):
 	
 	for i in range(len(classifier_list)):
 		classifiers[i].serialize(RUN_ID + "/" + nice_title(classifier_list[i][0]) + " (" + RUN_ID + ")" + ".model", train_data)
-	
-	plt.savefig(RUN_ID + "/" + "Results" + " (" + RUN_ID + ")" + ".png", bbox_inches='tight')
-	
+		
 	saver = Saver(classname = "weka.core.converters.ArffSaver")
 	saver.save_file(train_data, RUN_ID + "/" + "train_" + train_label + ".arff")
 	for i in range(len(splitted)):
 		saver.save_file(splitted[i], RUN_ID + "/" + "test_" + labels[i] + ".arff")
 
-# Display the plot
-plt.show()	
+# Plot the data
+plt.rcParams['xtick.labelsize'] = 20
+plt.rcParams['font.size'] = 25
+plt.rcParams['legend.fontsize'] = 18.75
+
+plt.figure(figsize = (13, 7))
+plt.title("Accuracy")
+plt.xlabel("Test group")
+for i in range(len(model_accuracy)):
+	plt.plot(label_list, model_accuracy[i], label = nice_title(classifier_list[i][0]))
+plt.xticks(label_list, rotation=45, ha='right')
+plt.legend()
+# plt.tight_layout()
+			
+if (save):
+	plt.savefig(RUN_ID + "/" + "Accuracy (" + RUN_ID + ")" + ".png", bbox_inches='tight')
+	
+plt.clf()
+
+plt.figure(figsize = (13, 7))
+plt.title("AUC")
+plt.xlabel("Test group")
+for i in range(len(model_recall)):
+	plt.plot(label_list, model_auc[i], label = nice_title(classifier_list[i][0]))
+plt.xticks(label_list, rotation=45, ha='right')
+plt.legend()
+# plt.tight_layout()
+			
+if (save):
+	plt.savefig(RUN_ID + "/" + "AUC (" + RUN_ID + ")" + ".png", bbox_inches='tight')
+	
+plt.clf()
+
+plt.figure(figsize = (13, 7))
+plt.title("Recall")
+plt.xlabel("Test group")
+for i in range(len(model_recall)):
+	plt.plot(label_list, model_recall[i], label = nice_title(classifier_list[i][0]))
+plt.xticks(label_list, rotation=45, ha='right')
+plt.legend()
+# plt.tight_layout()
+			
+if (save):
+	plt.savefig(RUN_ID + "/" + "Recall (" + RUN_ID + ")" + ".png", bbox_inches='tight')
+	
+plt.clf()
+
+plt.figure(figsize = (13, 7))
+plt.title("Precision")
+plt.xlabel("Test group")
+for i in range(len(model_precision)):
+	plt.plot(label_list, model_precision[i], label = nice_title(classifier_list[i][0]))
+plt.xticks(label_list, rotation=45, ha='right')
+plt.legend()
+# plt.tight_layout()
+			
+if (save):
+	plt.savefig(RUN_ID + "/" + "Precision (" + RUN_ID + ")" + ".png", bbox_inches='tight')
+	
+plt.clf()
 
 # Stop the JVM, quit the program
 jvm.stop()

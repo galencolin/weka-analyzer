@@ -1,0 +1,36 @@
+@relation 'brazilian-malware - actually processed-weka.filters.unsupervised.attribute.Reorder-R1,2,3,4,5,6,7,8,9,10,11,13,14,15,16,17,18,19,20,21,22,23,12-weka.filters.unsupervised.attribute.StringToNominal-Rlast-weka.filters.unsupervised.attribute.NumericToNominal-Rlast-weka.filters.unsupervised.attribute.NominalToString-Cfirst-last-weka.filters.unsupervised.attribute.StringToNominal-Rlast-weka.filters.unsupervised.attribute.Remove-R8,10-11-weka.filters.unsupervised.instance.RemoveRange-V-R1886-1899-weka.filters.MultiFilter-Fweka.filters.unsupervised.instance.RemoveRange -V -R 1886-1899-weka.filters.supervised.instance.Resample-B1.0-S1-Z100.0'
+
+@attribute BaseOfCode numeric
+@attribute BaseOfData numeric
+@attribute Characteristics numeric
+@attribute DllCharacteristics numeric
+@attribute Entropy numeric
+@attribute FileAlignment numeric
+@attribute ImageBase numeric
+@attribute Machine numeric
+@attribute NumberOfRvaAndSizes numeric
+@attribute NumberOfSections numeric
+@attribute NumberOfSymbols numeric
+@attribute Size numeric
+@attribute SizeOfCode numeric
+@attribute SizeOfHeaders numeric
+@attribute SizeOfImage numeric
+@attribute SizeOfInitializedData numeric
+@attribute SizeOfUninitializedData numeric
+@attribute Label {0,1}
+
+@data
+4096,20480,8462,0,4.618086,4096,2046623744,332,16,4,0,38720,16384,4096,32768,12288,0,0
+4096,40960,271,32768,7.999174,512,16777216,332,16,3,0,115547440,34816,1024,115556352,115504640,0,0
+4096,40960,271,32768,7.999744,512,16777216,332,16,3,0,42699176,34816,1024,42704896,42653696,0,0
+4096,417792,271,0,7.998254,4096,4194304,332,16,4,0,203554912,413696,4096,203599872,203137024,0,0
+4096,225280,271,0,7.971304,4096,4194304,332,16,4,0,4569829,221184,4096,335872,110592,0,0
+4096,225280,271,0,7.971304,4096,4194304,332,16,4,0,4569829,221184,4096,335872,110592,0,0
+69632,94208,2319,0,6.821786,512,4194304,332,16,3,0,49152,24576,4096,118784,24576,65536,0
+4096,28672,271,0,7.990967,512,4194304,332,16,4,0,1016245,24064,1024,188416,155136,0,0
+8192,16384,8462,1024,6.809977,512,2046427136,332,16,3,0,24800,5632,512,32768,2560,0,0
+4096,225280,271,0,7.971304,4096,4194304,332,16,4,0,4569829,221184,4096,335872,110592,0,0
+4096,40960,271,32768,7.999011,512,16777216,332,16,3,0,10438880,34816,1024,10436608,10386944,0,0
+4096,40960,271,32768,7.999011,512,16777216,332,16,3,0,10438880,34816,1024,10436608,10386944,0,0
+4096,40960,271,32768,7.999011,512,16777216,332,16,3,0,10438880,34816,1024,10436608,10386944,0,0
+4096,40960,271,32768,7.999011,512,16777216,332,16,3,0,10438880,34816,1024,10436608,10386944,0,0

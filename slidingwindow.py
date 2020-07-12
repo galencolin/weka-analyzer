@@ -61,9 +61,14 @@ train_mode = 'start'
 if ('train_mode' in args):
 	train_mode = args['train_mode']
 	
-# window_sizes = [5, 10, 100]
+splitby = 'count'
+if ('splitby' in args):
+	splitby = args['splitby'].lower()
+	
+window_sizes = [5, 10, 100]
 # window_sizes = [1] # just for debugging
-window_sizes = [2, 3, 5]
+# window_sizes = [2, 3, 5]
+# window_sizes = [10]
 
 # Load the data file
 print("Loading file", filename + '...')
@@ -96,9 +101,63 @@ def split_by_index(data, interval, strict_size = True):
 			labels.append(label)
 			splitted.append(data.subset(row_range = label))
 	return labels, splitted
-	
-# Split the dataset by a certain column's values (for example, in ranges of dates)
-# todo
+
+one_day = 1000 * 60 * 60 * 24
+month_days = [31, 28, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31]
+month_abbr = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"]
+
+def get_time_val(month, year):
+	passed_days = 0
+	for i in range(month):
+		passed_days += month_days[i]
+		if (i == 1 and year % 4 == 0): # leap year
+			passed_days += 1
+			
+	return ((year - 1970) * 365 + passed_days) * one_day
+
+# Split the dataset by months, by FirstSeenDate
+def split_by_month(data, interval, strict_size = True):
+	labels = []
+	splitted = []
+	length = len(data)
+	pointer = 0
+	current_month = 0
+	current_year = 1970
+	date_index = data.attribute_by_name("FirstSeenDate").index
+	while (pointer < length):
+		last_pointer = pointer
+		
+		next_month = current_month + interval
+		next_year = current_year + next_month // 12
+		next_month %= 12
+		
+		interval_start = get_time_val(current_month, current_year)
+		interval_end = get_time_val(next_month, next_year)
+		
+		while (pointer < length):
+			date = data.get_instance(pointer).get_value(date_index)
+			if (interval_start <= date and date < interval_end):
+				pointer += 1
+			else:
+				break
+		
+		if (pointer > last_pointer):
+			month_label = month_abbr[current_month] + " " + str(current_year)
+			if (interval > 1):
+				before_next_month = next_month - 1
+				before_next_year = next_year
+				if (before_next_month < 0):
+					before_next_month += 12
+					before_next_year -= 1
+				month_label += " - " + month_abbr[before_next_month] + " " + str(before_next_year)
+			labels.append(month_label)
+			range_label = str(last_pointer + 1) + "-" + str(pointer)
+			splitted.append(data.subset(row_range = range_label))
+		
+		current_month = next_month
+		current_year = next_year
+		
+	return labels, splitted
 
 # Apply the balancing filter to a dataset
 def apply_balance(data):
@@ -110,12 +169,12 @@ def apply_balance(data):
 
 # A list of classifiers
 classifier_list = [
-["weka.classifiers.trees.RandomTree", ""],
-["weka.classifiers.trees.J48", ""],
+# ["weka.classifiers.trees.RandomTree", ""],
+# ["weka.classifiers.trees.J48", ""],
 ["weka.classifiers.trees.RandomForest", ""],
-["weka.classifiers.rules.JRip", ""],
-["weka.classifiers.rules.PART", ""],
-["weka.classifiers.lazy.IBk", ""]
+# ["weka.classifiers.rules.JRip", ""],
+# ["weka.classifiers.rules.PART", ""],
+# ["weka.classifiers.lazy.IBk", ""]
 ]
 
 # Builds a list of classifiers without evaluating them
@@ -176,7 +235,8 @@ def test_classifiers(classifiers, classifier_names, data, label):
 		auc = evaluation.area_under_roc(1)
 		rec = evaluation.recall(1)
 		pre = evaluation.precision(1)
-		if (math.isnan(acc) or math.isnan(auc) or math.isnan(rec) or math.isnan(pre) or rec < 0.02):
+		num = label.split("-")[-1]
+		if (math.isnan(acc) or math.isnan(auc) or math.isnan(rec) or math.isnan(pre) or rec < 0.02 or (splitby == 'count' and int(num) == 22500)):
 			acc = float('nan')
 			auc = float('nan')
 			rec = float('nan')
@@ -193,7 +253,10 @@ def test_classifiers(classifiers, classifier_names, data, label):
 	return results
 
 # Split data, collect the training data, also preprocess a bit
-labels, splitted = split_by_index(data, group_size)
+if (splitby == 'count'):
+	labels, splitted = split_by_index(data, group_size)
+else:
+	labels, splitted = split_by_month(data, group_size)
 
 for i in range(len(splitted)):
 	splitted[i].delete_attribute(splitted[i].attribute_by_name('FirstSeenDate').index)
@@ -211,9 +274,9 @@ def run_slide(classifier, data, train_split):
 	# Run the evaluation
 	if (start_pos < len(splitted)):
 		for i in range(start_pos, len(splitted)):
-			# manually exclude first 10,000
-			num = int(labels[i].split("-")[-1])
-			if (num <= 10000):
+			# manually exclude first 10,000, or before 2014
+			num = labels[i].split("-")[-1]
+			if ((splitby == 'count' and int(num) <= 15000) or (splitby == 'month' and int(num.split(' ')[-1]) < 2014)):
 				continue
 			
 			print("Evaluating group", labels[i])
@@ -278,7 +341,9 @@ for classifier in classifier_list:
 		results_precision.append(result_pre)
 		
 	# Plot the data
-	plt.rcParams['xtick.labelsize'] = 7
+	plt.rcParams['xtick.labelsize'] = 20
+	plt.rcParams['font.size'] = 25
+	plt.rcParams['legend.fontsize'] = 18.75
 	plt.rcParams['figure.max_open_warning'] = 50
 
 	title = nice_title(classifier[0])
@@ -293,7 +358,7 @@ for classifier in classifier_list:
 		plt.plot(label_list[i], results_accuracy[i], label = str(winsize) + " groups")
 	plt.xticks(label_list[-1], rotation=45, ha='right')
 	plt.legend()
-	plt.ylim(0, 100.5)
+	plt.tight_layout()
 			
 	if (save):
 		plt.savefig(RUN_ID + "/" + "Accuracy - " + title + " (" + RUN_ID + ")" + ".png", bbox_inches='tight')
@@ -310,7 +375,7 @@ for classifier in classifier_list:
 		plt.plot(label_list[i], results_auc[i], label = str(winsize) + " groups")
 	plt.xticks(label_list[-1], rotation=45, ha='right')
 	plt.legend()
-	plt.ylim(0, 1.005)
+	plt.tight_layout()
 	
 	if (save):
 		plt.savefig(RUN_ID + "/" + "AUC - " + title + " (" + RUN_ID + ")" + ".png", bbox_inches='tight')
@@ -327,7 +392,7 @@ for classifier in classifier_list:
 		plt.plot(label_list[i], results_recall[i], label = str(winsize) + " groups")
 	plt.xticks(label_list[-1], rotation=45, ha='right')
 	plt.legend()
-	plt.ylim(0, 1.005)
+	plt.tight_layout()
 	
 	if (save):
 		plt.savefig(RUN_ID + "/" + "Recall - " + title + " (" + RUN_ID + ")" + ".png", bbox_inches='tight')
@@ -344,7 +409,7 @@ for classifier in classifier_list:
 		plt.plot(label_list[i], results_precision[i], label = str(winsize) + " groups")
 	plt.xticks(label_list[-1], rotation=45, ha='right')
 	plt.legend()
-	plt.ylim(0, 1.005)
+	plt.tight_layout()
 	
 	if (save):
 		plt.savefig(RUN_ID + "/" + "Precision - " + title + " (" + RUN_ID + ")" + ".png", bbox_inches='tight')
