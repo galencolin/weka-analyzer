@@ -354,9 +354,10 @@ for classifier in classifier_list:
 	for i in range(len(window_sizes)):
 		winsize = window_sizes[i]
 		if (winsize >= len(splitted)):
-			winsize = "All previous"
+			winsize = "All"
 		plt.plot(label_list[i], results_accuracy[i], label = str(winsize) + " groups")
 	plt.xticks(label_list[-1], rotation=45, ha='right')
+	plt.ylim(0, 101)
 	plt.legend()
 	plt.tight_layout()
 			
@@ -371,9 +372,10 @@ for classifier in classifier_list:
 	for i in range(len(window_sizes)):
 		winsize = window_sizes[i]
 		if (winsize >= len(splitted)):
-			winsize = "All previous"
+			winsize = "All"
 		plt.plot(label_list[i], results_auc[i], label = str(winsize) + " groups")
 	plt.xticks(label_list[-1], rotation=45, ha='right')
+	plt.ylim(0, 1.01)
 	plt.legend()
 	plt.tight_layout()
 	
@@ -388,9 +390,10 @@ for classifier in classifier_list:
 	for i in range(len(window_sizes)):
 		winsize = window_sizes[i]
 		if (winsize >= len(splitted)):
-			winsize = "All previous"
+			winsize = "All"
 		plt.plot(label_list[i], results_recall[i], label = str(winsize) + " groups")
 	plt.xticks(label_list[-1], rotation=45, ha='right')
+	plt.ylim(0, 1.01)
 	plt.legend()
 	plt.tight_layout()
 	
@@ -405,9 +408,10 @@ for classifier in classifier_list:
 	for i in range(len(window_sizes)):
 		winsize = window_sizes[i]
 		if (winsize >= len(splitted)):
-			winsize = "All previous"
+			winsize = "All"
 		plt.plot(label_list[i], results_precision[i], label = str(winsize) + " groups")
 	plt.xticks(label_list[-1], rotation=45, ha='right')
+	plt.ylim(0, 1.01)
 	plt.legend()
 	plt.tight_layout()
 	

@@ -1,0 +1,1 @@
+python rundata.py train_split=3 group_size=5000 

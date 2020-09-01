@@ -28,7 +28,7 @@ for arg in sys.argv:
 			args[splitted[0]] = splitted[1]
 			
 # Create a unique ID for this run to save models - simply the date/time
-RUN_ID = str(datetime.datetime.now()).split(".")[0].replace(":", "꞉")
+RUN_ID = str(datetime.datetime.now()).split(".")[0].replace(":", "꞉") + " (rundata)"
 
 # Some constants - if no command-line argument present, the initial values serve as the defaults
 filename = 'brazilian-malware - processed notext.arff'
@@ -39,7 +39,7 @@ group_size = 5000
 if ('group_size' in args):
 	group_size = int(args['group_size'])
 
-train_split = 4
+train_split = 3
 if ('train_split' in args):
 	train_split = int(args['train_split'])
 	
@@ -158,12 +158,16 @@ def apply_balance(data):
 
 # A list of classifiers
 classifier_list = [
-["weka.classifiers.trees.J48", ""],
-["weka.classifiers.trees.RandomTree", ""],
+# ["weka.classifiers.meta.Vote", ["-S", "1", "-B", "weka.classifiers.trees.RandomForest", "-B", "weka.classifiers.trees.RandomTree", "-R", "AVG"]],
+# ["weka.classifiers.meta.RandomCommittee", ["-W", "weka.classifiers.trees.RandomForest"]],
+# ["weka.classifiers.trees.J48", ""],
+# ["weka.classifiers.trees.RandomTree", ""],
+["weka.classifiers.meta.AdaBoostM1", ["-W", "weka.classifiers.trees.RandomForest"]],
+["weka.classifiers.trees.RandomForest", ["-P", "100", "-I", "1000", "-K", "4", "-M", "1.0", "-V", "0.001", "-S", "1", "-depth", "10"]], 
 ["weka.classifiers.trees.RandomForest", ""],
-["weka.classifiers.rules.JRip", ""],
-["weka.classifiers.rules.PART", ""],
-["weka.classifiers.lazy.IBk", ""]
+# ["weka.classifiers.rules.JRip", ""],
+# ["weka.classifiers.rules.PART", ""],
+# ["weka.classifiers.lazy.IBk", ""],
 ]
 
 # Builds a list of classifiers without evaluating them
@@ -292,8 +296,11 @@ for i in range(len(classifier_list)):
 	model_precision.append(results_precision)
 
 # Extract the model's name from its Weka filepath (example: weka.classifiers.trees.J48 -> J48)
-def nice_title(title):
-	return title.split('.')[-1]
+def nice_title(title, index):
+	if (title[1] == [] or title[1] == ""):
+		return title[0].split('.')[-1] + " (" + str(index) + ")"
+	else:
+		return title[0].split('.')[-1] + " (modified)" + " (" + str(index) + ")"
 
 # Save models, if applicable
 print("Run ID:", RUN_ID)
@@ -310,12 +317,23 @@ if (save):
 		f.write(cmd + '\n')
 	
 	for i in range(len(classifier_list)):
-		classifiers[i].serialize(RUN_ID + "/" + nice_title(classifier_list[i][0]) + " (" + RUN_ID + ")" + ".model", train_data)
+		classifiers[i].serialize(RUN_ID + "/" + nice_title(classifier_list[i], i) + " (" + RUN_ID + ")" + ".model", train_data)
 		
 	saver = Saver(classname = "weka.core.converters.ArffSaver")
 	saver.save_file(train_data, RUN_ID + "/" + "train_" + train_label + ".arff")
 	for i in range(len(splitted)):
 		saver.save_file(splitted[i], RUN_ID + "/" + "test_" + labels[i] + ".arff")
+	
+	with open(RUN_ID + "/" + "results.txt", "w") as f:
+		f.write(str(label_list) + '\n')
+		for i in range(len(classifier_list)):
+			f.write(nice_title(classifier_list[i], i) + " (accuracy): " + str(model_accuracy[i]) + '\n')
+		for i in range(len(classifier_list)):
+			f.write(nice_title(classifier_list[i], i) + " (auc): " + str(model_auc[i]) + '\n')
+		for i in range(len(classifier_list)):
+			f.write(nice_title(classifier_list[i], i) + " (recall): " + str(model_recall[i]) + '\n')
+		for i in range(len(classifier_list)):
+			f.write(nice_title(classifier_list[i], i) + " (precision): " + str(model_precision[i]) + '\n')
 
 # Plot the data
 plt.rcParams['xtick.labelsize'] = 20
@@ -326,7 +344,7 @@ plt.figure(figsize = (13, 7))
 plt.title("Accuracy")
 plt.xlabel("Test group")
 for i in range(len(model_accuracy)):
-	plt.plot(label_list, model_accuracy[i], label = nice_title(classifier_list[i][0]))
+	plt.plot(label_list, model_accuracy[i], label = nice_title(classifier_list[i], i))
 plt.xticks(label_list, rotation=45, ha='right')
 plt.legend()
 # plt.tight_layout()
@@ -340,7 +358,7 @@ plt.figure(figsize = (13, 7))
 plt.title("AUC")
 plt.xlabel("Test group")
 for i in range(len(model_recall)):
-	plt.plot(label_list, model_auc[i], label = nice_title(classifier_list[i][0]))
+	plt.plot(label_list, model_auc[i], label = nice_title(classifier_list[i], i))
 plt.xticks(label_list, rotation=45, ha='right')
 plt.legend()
 # plt.tight_layout()
@@ -354,7 +372,7 @@ plt.figure(figsize = (13, 7))
 plt.title("Recall")
 plt.xlabel("Test group")
 for i in range(len(model_recall)):
-	plt.plot(label_list, model_recall[i], label = nice_title(classifier_list[i][0]))
+	plt.plot(label_list, model_recall[i], label = nice_title(classifier_list[i], i))
 plt.xticks(label_list, rotation=45, ha='right')
 plt.legend()
 # plt.tight_layout()
@@ -368,7 +386,7 @@ plt.figure(figsize = (13, 7))
 plt.title("Precision")
 plt.xlabel("Test group")
 for i in range(len(model_precision)):
-	plt.plot(label_list, model_precision[i], label = nice_title(classifier_list[i][0]))
+	plt.plot(label_list, model_precision[i], label = nice_title(classifier_list[i], i))
 plt.xticks(label_list, rotation=45, ha='right')
 plt.legend()
 # plt.tight_layout()
